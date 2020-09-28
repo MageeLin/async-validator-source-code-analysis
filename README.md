@@ -20,7 +20,18 @@
 [bundlesize-image]: https://img.shields.io/bundlephobia/minzip/async-validator.svg?label=gzip%20size
 [bundlesize-url]: https://bundlephobia.com/result?p=async-validator
 
+## 内容介绍
+
+本仓库 fork 自[async-validator](https://github.com/yiminghe/async-validator)的`master`分支，`commitID`为`8e17b30`。翻译了 README 文档，并解析了源代码。
+
+## 代码结构
+
+代码结构如下所示：
+
+![代码结构图](https://raw.githubusercontent.com/MageeLin/async-validator-source-code-analysis/37c0ca0dcc4845ba4f5f526f6b27debf72bd9c84/src/async-validator.svg)
+
 异步表单验证。参考自 https://github.com/freeformsystems/async-validate
+
 
 ## 安装
 
