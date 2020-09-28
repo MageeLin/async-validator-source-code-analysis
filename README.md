@@ -20,17 +20,17 @@
 [bundlesize-image]: https://img.shields.io/bundlephobia/minzip/async-validator.svg?label=gzip%20size
 [bundlesize-url]: https://bundlephobia.com/result?p=async-validator
 
-Validate form asynchronous. A variation of https://github.com/freeformsystems/async-validate
+异步表单验证。参考自 https://github.com/freeformsystems/async-validate
 
-## Install
+## 安装
 
 ```bash
 npm i async-validator
 ```
 
-## Usage
+## 使用方法
 
-Basic usage involves defining a descriptor, assigning it to a schema and passing the object to be validated and a callback function to the `validate` method of the schema:
+基本的使用方法：定义一个 `descriptor`，将其分配给一个 `schema`，并将要验证的 `object` 以及一个`回调函数`传递给该 `schema` 的`validate`方法：
 
 ```js
 import Schema from 'async-validator';
@@ -45,7 +45,7 @@ const descriptor = {
     asyncValidator: (rule, value) => {
       return new Promise((resolve, reject) => {
         if (value < 18) {
-          reject('too young');  // reject with error message
+          reject('too young'); // reject 这个 error message
         } else {
           resolve();
         }
@@ -56,20 +56,22 @@ const descriptor = {
 const validator = new Schema(descriptor);
 validator.validate({ name: 'muji' }, (errors, fields) => {
   if (errors) {
-    // validation failed, errors is an array of all errors
-    // fields is an object keyed by field name with an array of
-    // errors per field
+    // 校验失败，errors是一个包含所有error的数组。
+    // fields是一个对象，对象中field（字段）是key，每个field对应的所有error组成的数组是value。
     return handleErrors(errors, fields);
   }
-  // validation passed
+  // 校验通过
 });
 
-// PROMISE USAGE
-validator.validate({ name: 'muji', age: 16 }).then(() => {
-  // validation passed or without error message
-}).catch(({ errors, fields }) => {
-  return handleErrors(errors, fields);
-});
+// PROMISE使用方法
+validator
+  .validate({ name: 'muji', age: 16 })
+  .then(() => {
+    // 校验通过或者没有error message
+  })
+  .catch(({ errors, fields }) => {
+    return handleErrors(errors, fields);
+  });
 ```
 
 ## API
@@ -80,41 +82,39 @@ validator.validate({ name: 'muji', age: 16 }).then(() => {
 function(source, [options], callback): Promise
 ```
 
-* `source`: The object to validate (required).
-* `options`: An object describing processing options for the validation (optional).
-* `callback`: A callback function to invoke when validation completes (required).
+- `source`: 需要校验的对象（必选）。
+- `options`: 描述校验的处理选项的对象（可选）。
+- `callback`: 当校验完成时调用的回调函数（必选）。
 
-The method will return a Promise object like:
-* `then()`，validation passed
-* `catch({ errors, fields })`，validation failed, errors is an array of all errors, fields is an object keyed by field name with an array of
+该方法将返回一个 Promise 对象，如下:
+
+- `then()`，校验通过
+- `catch({ errors, fields })`，校验失败，errors 是一个所有 error 组成的数组；field 是一个对象，键是 field，值是对应的 errors 数组。
 
 ### Options
 
-* `suppressWarning`: Boolean, whether to suppress internal warning about invalid value.
+- `suppressWarning`: Boolean，指示是否取消关于无效值的内部警告。
 
-* `first`: Boolean, Invoke `callback` when the first validation rule generates an error,
-no more validation rules are processed.
-If your validation involves multiple asynchronous calls (for example, database queries) and you only need the first error use this option.
+- `first`: Boolean，当第一个校验规则产生`error`时调用`callback`，不再继续处理校验规则。如果校验涉及多个异步调用（例如数据库查询） ，且只需要第一个`error`出现时就停止，则使用此选项。
 
-* `firstFields`: Boolean|String[], Invoke `callback` when the first validation rule of the specified field generates an error,
-no more validation rules of the same field are processed.  `true` means all fields.
+- `firstFields`: Boolean|String[], 当指定字段的第一个校验规则产生`error`时调用`callback`，不再继续处理相同字段的校验规则。`true`意味着所有字段生效。
 
 ### Rules
 
-Rules may be functions that perform validation.
+Rules 可能是执行校验的函数。
 
 ```js
 function(rule, value, callback, source, options)
 ```
 
-* `rule`: The validation rule in the source descriptor that corresponds to the field name being validated. It is always assigned a `field` property with the name of the field being validated.
-* `value`: The value of the source object property being validated.
-* `callback`: A callback function to invoke once validation is complete. It expects to be passed an array of `Error` instances to indicate validation failure. If the check is synchronous, you can directly return a ` false ` or ` Error ` or ` Error Array `.
-* `source`: The source object that was passed to the `validate` method.
-* `options`: Additional options.
-* `options.messages`: The object containing validation error messages, will be deep merged with defaultMessages.
+- `rule`: 在源`descriptor`中，与要校验的字段名称相对应的校验规则。始终为它分配一个`field`属性，其中包含要验证的字段的名称。
+- `value`: 源对象属性中要校验的值。
+- `callback`: 校验完成后要调用的`callback`。它期望传递一个`Error`实例数组以指示校验失败。如果校验是同步的，则可以直接返回`false`、`Error`或`Error Array`。
+- `source`: 传给`validate` 方法的源对象。
+- `options`: 额外选项。
+- `options.messages`: 包含校验 error message 的对象，将与 defaultMessages 进行深度合并。
 
-The options passed to `validate` or `asyncValidate` are passed on to the validation functions so that you may reference transient data (such as model references) in validation functions. However, some option names are reserved; if you use these properties of the options object they are overwritten. The reserved properties are `messages`, `exception` and `error`.
+传给`validate` 或 `asyncValidate`的选项被传递给校验函数，以便于可以在校验函数中引用临时数据（例如 model 引用）。但是有些选项名是保留的; 如果使用`options`对象的这些属性将会导致覆盖。保留的属性是`messages`, `exception` 和 `error`.
 
 ```js
 import Schema from 'async-validator';
@@ -122,9 +122,9 @@ const descriptor = {
   name(rule, value, callback, source, options) {
     const errors = [];
     if (!/^[a-z0-9]+$/.test(value)) {
-      errors.push(new Error(
-        util.format('%s must be lowercase alphanumeric characters', rule.field),
-      ));
+      errors.push(
+        new Error(util.format('%s 必须为小写字母的数字字符', rule.field)),
+      );
     }
     return errors;
   },
@@ -134,21 +134,21 @@ validator.validate({ name: 'Firstname' }, (errors, fields) => {
   if (errors) {
     return handleErrors(errors, fields);
   }
-  // validation passed
+  // 校验通过
 });
 ```
 
-It is often useful to test against multiple validation rules for a single field, to do so make the rule an array of objects, for example:
+对单个字段的多个校验规则进行测试的情况很常见，此时可以使规则成为一个对象数组，例如:
 
 ```js
 const descriptor = {
   email: [
     { type: 'string', required: true, pattern: Schema.pattern.email },
-    { 
+    {
       validator(rule, value, callback, source, options) {
         const errors = [];
-        // test if email address already exists in a database
-        // and add a validation error to the errors array if it does
+        // 测试email地址是否已经在数组库中存在
+        // 并当已存在时在errors数组中添加一个error
         return errors;
       },
     },
@@ -158,47 +158,47 @@ const descriptor = {
 
 #### Type
 
-Indicates the `type` of validator to use. Recognised type values are:
+标志要使用的`validator`的`type`，可识别的`type`值为:
 
-* `string`: Must be of type `string`. `This is the default type.`
-* `number`: Must be of type `number`.
-* `boolean`: Must be of type `boolean`.
-* `method`: Must be of type `function`.
-* `regexp`: Must be an instance of `RegExp` or a string that does not generate an exception when creating a new `RegExp`.
-* `integer`: Must be of type `number` and an integer.
-* `float`: Must be of type `number` and a floating point number.
-* `array`: Must be an array as determined by `Array.isArray`.
-* `object`: Must be of type `object` and not `Array.isArray`.
-* `enum`: Value must exist in the `enum`.
-* `date`: Value must be valid as determined by `Date`
-* `url`: Must be of type `url`.
-* `hex`: Must be of type `hex`.
-* `email`: Must be of type `email`.
-* `any`: Can be any type.
+- `string`: 必须为类型 `string`， 这是默认的 type。
+- `number`: 必须为类型 `number`。
+- `boolean`: 必须为类型 `boolean`。
+- `method`: 必须为类型 `function`。
+- `regexp`: 必须为 `RegExp`的实例 或者 一个`string`，使用它 new `RegExp`时不能报错。
+- `integer`: 必须为类型 `number` 并且是一个整数。
+- `float`: 必须为类型 `number` 并且是一个浮点数。
+- `array`: 必须是一个 array ，由 `Array.isArray`确定。
+- `object`: 必须为类型 `object` 并且 `Array.isArray`返回`false`。
+- `enum`: 值必须在 `enum`中存在。
+- `date`: 值必须是有效的，由`Date`确定。
+- `url`: 必须为类型 `url`。
+- `hex`: 必须为类型 `hex`。
+- `email`: 必须为类型 `email`。
+- `any`: 可以是任意一种类型。
 
 #### Required
 
-The `required` rule property indicates that the field must exist on the source object being validated.
+`rule`属性`required`指示在校验时该`field`必须在`source`对象上存在
 
 #### Pattern
 
-The `pattern` rule property indicates a regular expression that the value must match to pass validation.
+`rule`属性`pattern`指示在校验时该值必须能通过正则表达式的校验。
 
 #### Range
 
-A range is defined using the `min` and `max` properties. For `string` and `array` types comparison is performed against the `length`, for `number` types the number must not be less than `min` nor greater than `max`.
+使用 `min` 和 `max` 属性定义范围。对于`string`和`array`类型，根据`length`属性进行比较，对于`number`类型，数字不能小于 `min`，也不能大于 `max`。
 
 #### Length
 
-To validate an exact length of a field specify the `len` property. For `string` and `array` types comparison is performed on the `length` property, for the `number` type this property indicates an exact match for the `number`, ie, it may only be strictly equal to `len`.
+若要校验`field`的精确长度，请指定 `len` 属性。对于`string`和`array`类型的比较是在`length`属性上执行的，对于`number`类型，这个属性表示数字的精确匹配，也就是说，它只能严格等于 `len`。
 
-If the `len` property is combined with the `min` and `max` range properties, `len` takes precedence.
+如果 `len` 属性与 `min` 和 `max` 两个 range 属性组合使用，`len` 优先。
 
 #### Enumerable
 
-> Since version 3.0.0 if you want to validate the values `0` or `false` inside `enum` types, you have to include them explicitly.
+> 从 3.0.0 版本开始，如果想校验`enum`类型中的值`0`或 `false`，就必须显式地包含它们。
 
-To validate a value from a list of possible values use the `enum` type with a `enum` property listing the valid values for the field, for example:
+要校验 所有可能值组成的列表 中的值，使用`enum`类型和`enum`属性列出该字段的有效值，例如:
 
 ```js
 const descriptor = {
@@ -208,14 +208,13 @@ const descriptor = {
 
 #### Whitespace
 
-It is typical to treat required fields that only contain whitespace as errors. To add an additional test for a string that consists solely of whitespace add a `whitespace` property to a rule with a value of `true`. The rule must be a `string` type.
+通常将只包含空白的必填字段视为错误。若要为仅由空格组成的字符串添加额外的校验，请向值为 `true` 的规则添加`whitespace`属性。规则必须是`string`类型。
 
-You may wish to sanitize user input instead of testing for whitespace, see [transform](#transform) for an example that would allow you to strip whitespace.
-
+您可能希望对用户输入进行净化，而不是校验`whitespace`，请参阅[transform](#transform)，以了解删除空白的示例。
 
 #### Deep Rules
 
-If you need to validate deep object properties you may do so for validation rules that are of the `object` or `array` type by assigning nested rules to a `fields` property of the rule.
+如果需要校验深层次对象的属性，可以通过将`嵌套规则`分配给`rules`的`fields`属性来校验属于 `object` 或 `array` 类型的校验规则。
 
 ```js
 const descriptor = {
@@ -232,13 +231,13 @@ const descriptor = {
 };
 const validator = new Schema(descriptor);
 validator.validate({ address: {} }, (errors, fields) => {
-  // errors for address.street, address.city, address.zip
+  // address.street, address.city, address.zip产生了errors
 });
 ```
 
-Note that if you do not specify the `required` property on the parent rule it is perfectly valid for the field not to be declared on the source object and the deep validation rules will not be executed as there is nothing to validate against.
+请注意，如果没有在父规则上指定`required`属性，那么不在`source`对象上声明该字段是完全有效的，并且深度校验规则也不会执行，因为没有什么需要校验的东西。
 
-Deep rule validation creates a schema for the nested rules so you can also specify the `options` passed to the `schema.validate()` method.
+深度规则校验为嵌套`rules`创建`schema`，因此还可以指定传递给 `schema.validate()`方法的`options`。
 
 ```js
 const descriptor = {
@@ -249,20 +248,19 @@ const descriptor = {
     fields: {
       street: { type: 'string', required: true },
       city: { type: 'string', required: true },
-      zip: { type: 'string', required: true, len: 8, message: 'invalid zip' },
+      zip: { type: 'string', required: true, len: 8, message: '无效zip' },
     },
   },
   name: { type: 'string', required: true },
 };
 const validator = new Schema(descriptor);
 
-validator.validate({ address: {} })
-  .catch(({ errors, fields }) => {
-    // now only errors for street and name    
-  });
+validator.validate({ address: {} }).catch(({ errors, fields }) => {
+  // 只有street 和 name 产生了 errors
+});
 ```
 
-The parent rule is also validated so if you have a set of rules such as:
+父规则也会被校验，所以如果你有一组`rules`，比如:
 
 ```js
 const descriptor = {
@@ -279,12 +277,11 @@ const descriptor = {
 };
 ```
 
-And supply a source object of `{ roles: ['admin', 'user'] }` then two errors will be created. One for the array length mismatch and one for the missing required array entry at index 2.
+提供`{ roles: ['admin', 'user'] }`这样的`source`对象，将创建两个`error`。一个用于数组长度不匹配，另一个用于缺少索引`2`处所需的数组。
 
 #### defaultField
 
-The `defaultField` property can be used with the `array` or `object` type for validating all values of the container.
-It may be an `object` or `array` containing validation rules. For example:
+`defaultField` 属性可以与`array` 或 `object`类型一起使用，以校验内部的所有值。它可能是包含校验规则的 `object` 或 `array`。例如:
 
 ```js
 const descriptor = {
@@ -296,11 +293,11 @@ const descriptor = {
 };
 ```
 
-Note that `defaultField` is expanded to `fields`, see [deep rules](#deep-rules).
+注意，若将`defaultField` 扩展为`fields`，请参见[deep rules](#deep-rules)。
 
 #### Transform
 
-Sometimes it is necessary to transform a value before validation, possibly to coerce the value or to sanitize it in some way. To do this add a `transform` function to the validation rule. The property is transformed prior to validation and re-assigned to the source object to mutate the value of the property in place.
+有时需要校验之前转换值，可能是为了强制转换类型或以某种方式对其进行净化。为此，在校验规则中添加一个`transform`函数。在校验之前对属性进行转换，并重新分配给`source`对象以更改属性的值。
 
 ```js
 import Schema from 'async-validator';
@@ -316,55 +313,54 @@ const descriptor = {
 };
 const validator = new Schema(descriptor);
 const source = { name: ' user  ' };
-validator.validate(source)
-  .then(() => assert.equal(source.name, 'user'));
+validator.validate(source).then(() => assert.equal(source.name, 'user'));
 ```
 
-Without the `transform` function validation would fail due to the pattern not matching as the input contains leading and trailing whitespace, but by adding the transform function validation passes and the field value is sanitized at the same time.
-
+如果没有`transform`函数，校验将会失败，原因是`pattern`不匹配，因为输入包含前置和后置空白。但是通过添加`transform`函数，校验成功并且字段值同时被净化。
 
 #### Messages
 
-Depending upon your application requirements, you may need i18n support or you may prefer different validation error messages.
+根据应用的需求，可能需要 `i18n` 支持，或者可能更喜欢个性化的校验`error message`。
 
-The easiest way to achieve this is to assign a `message` to a rule:
-
-```js
-{ name: { type: 'string', required: true, message: 'Name is required' } }
-```
-
-Message can be any type, such as jsx format.
+最简单的方法是给一个`rule`分配一条`message`:
 
 ```js
-{ name: { type: 'string', required: true, message: '<b>Name is required</b>' } }
+{ name: { type: 'string', required: true, message: '请填写名称' } }
 ```
 
-Message can also be a function, e.g. if you use vue-i18n:
+`message`可以是任意类型，比如`jsx`格式：
+
 ```js
-{ name: { type: 'string', required: true, message: () => this.$t( 'name is required' ) } }
+{ name: { type: 'string', required: true, message: '<b>请填写名称</b>' } }
 ```
 
-Potentially you may require the same schema validation rules for different languages, in which case duplicating the schema rules for each language does not make sense.
+`message`也可以是一个函数，比如`vue-i18n`：
 
-In this scenario you could just provide your own messages for the language and assign it to the schema:
+```js
+{ name: { type: 'string', required: true, message: () => this.$t( '请填写名称' ) } }
+```
+
+对于不同的语言，可能需要相同的`schema`校验规则，在这种情况下，为每种语言复制`schema`规则是无效的。
+
+但是，可以提供你自己的语言版本的`message`，然后把它分配给`schema`:
 
 ```js
 import Schema from 'async-validator';
 const cn = {
-  required: '%s 必填',
+  required: '请填写 %s',
 };
 const descriptor = { name: { type: 'string', required: true } };
 const validator = new Schema(descriptor);
-// deep merge with defaultMessages
+// 与defaultMessages深度合并
 validator.messages(cn);
 ...
 ```
 
-If you are defining your own validation functions it is better practice to assign the message strings to a messages object and then access the messages via the `options.messages` property within the validation function.
+如果要自定义校验函数，最好将`message`字符串分配给`message`对象，然后通过校验函数中的 `options.messages` 属性访问`message`。
 
 #### asyncValidator
 
-You can customize the asynchronous validation function for the specified field:
+可以为指定字段自定义异步校验函数:
 
 ```js
 const fields = {
@@ -373,11 +369,14 @@ const fields = {
       ajax({
         url: 'xx',
         value: value,
-      }).then(function(data) {
-        callback();
-      }, function(error) {
-        callback(new Error(error));
-      });
+      }).then(
+        function (data) {
+          callback();
+        },
+        function (error) {
+          callback(new Error(error));
+        },
+      );
     },
   },
 
@@ -394,7 +393,7 @@ const fields = {
 
 #### validator
 
-You can custom validate function for specified field:
+可以为指定的字段自定义同步校验函数:
 
 ```js
 const fields = {
@@ -410,30 +409,27 @@ const fields = {
       return new Error(`${value} is not equal to 'test'.`);
     },
   },
- 
+
   arrField: {
     validator(rule, value) {
-      return [
-        new Error('Message 1'),
-        new Error('Message 2'),
-      ];
+      return [new Error('Message 1'), new Error('Message 2')];
     },
   },
 };
 ```
 
-## FAQ
+## 常见问题
 
-### How to avoid warning
+### 如何取消 warning
 
 ```js
 import Schema from 'async-validator';
-Schema.warning = function(){};
+Schema.warning = function () {};
 ```
 
-### How to check if it is `true`
+### 如果检查布尔值 `true`
 
-Use `enum` type passing `true` as option.
+使用 `enum` 类型 并传布尔值 `true` 参数作为选项。
 
 ```js
 {
@@ -443,20 +439,20 @@ Use `enum` type passing `true` as option.
 }
 ```
 
-## Test Case
+## 测试用例
 
 ```bash
 npm test
 ```
 
-## Coverage
+## 测试覆盖率
 
 ```bash
 npm run coverage
 ```
 
-Open coverage/ dir
+打开 `coverage/ dir`
 
-## License
+## 许可证
 
-Everything is [MIT](https://en.wikipedia.org/wiki/MIT_License).
+一切内容皆适用 [MIT](https://en.wikipedia.org/wiki/MIT_License) 许可证。
