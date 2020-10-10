@@ -175,21 +175,33 @@ export class AsyncValidationError extends Error {
 }
 
 export function asyncMap(objArr, option, func, callback) {
+  // 如果option.first选项为真，说明第一个error产生时就要报错
   if (option.first) {
+    // pending是一个promise
     const pending = new Promise((resolve, reject) => {
+      // 定义一个函数next，这个函数先调用callback，参数市errors
+      // 再根据errors的长度决定resolve还是reject
       const next = errors => {
         callback(errors);
         return errors.length
+        // reject的时候，返回一个AsyncValidationError的实例
+        // 实例化时第一个参数是errors数组，第二个参数是对象类型的errors
           ? reject(new AsyncValidationError(errors, convertFieldsError(errors)))
           : resolve();
       };
+      // 把对象扁平化为数组flattenArr
       const flattenArr = flattenObjArr(objArr);
+      // 串行
       asyncSerialArray(flattenArr, func, next);
     });
+    // 捕获error
     pending.catch(e => e);
+    // 返回promise实例
     return pending;
   }
+  // 当指定字段的第一个校验规则产生error时调用callback，不再继续处理相同字段的校验规则。
   let firstFields = option.firstFields || [];
+  // true意味着所有字段生效。
   if (firstFields === true) {
     firstFields = Object.keys(objArr);
   }
@@ -197,6 +209,7 @@ export function asyncMap(objArr, option, func, callback) {
   const objArrLength = objArrKeys.length;
   let total = 0;
   const results = [];
+  // 这里定义的函数next和上面的类似，只不过多了total的判断
   const pending = new Promise((resolve, reject) => {
     const next = errors => {
       results.push.apply(results, errors);
@@ -214,6 +227,8 @@ export function asyncMap(objArr, option, func, callback) {
       callback(results);
       resolve();
     }
+    // 当firstFields中有对应的key时，就串行。
+    // 否则就并行
     objArrKeys.forEach(key => {
       const arr = objArr[key];
       if (firstFields.indexOf(key) !== -1) {
@@ -223,7 +238,9 @@ export function asyncMap(objArr, option, func, callback) {
       }
     });
   });
+  // 捕获error
   pending.catch(e => e);
+  // 返回promise实例
   return pending;
 }
 
