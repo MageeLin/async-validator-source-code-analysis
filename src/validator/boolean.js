@@ -2,14 +2,14 @@ import { isEmptyValue } from '../util';
 import rules from '../rule/index.js';
 
 /**
- *  Validates a boolean.
+ *  校验布尔值
  *
- *  @param rule The validation rule.
- *  @param value The value of the field on the source object.
- *  @param callback The callback function.
- *  @param source The source object being validated.
- *  @param options The validation options.
- *  @param options.messages The validation messages.
+ *  @param rule 校验规则
+ *  @param value 该字段在source对象中的值
+ *  @param callback 回调函数
+ *  @param source 要校验的source对象
+ *  @param options 校验选项
+ *  @param options.messages 校验message
  */
 function boolean(rule, value, callback, source, options) {
   const errors = [];
@@ -21,6 +21,7 @@ function boolean(rule, value, callback, source, options) {
     }
     rules.required(rule, value, source, errors, options);
     if (value !== undefined) {
+      // 校验类型
       rules.type(rule, value, source, errors, options);
     }
   }

@@ -2,14 +2,14 @@ import rules from '../rule/index.js';
 import { isEmptyValue } from '../util';
 
 /**
- *  Validates the regular expression type.
+ *  校验正则表达式类型
  *
- *  @param rule The validation rule.
- *  @param value The value of the field on the source object.
- *  @param callback The callback function.
- *  @param source The source object being validated.
- *  @param options The validation options.
- *  @param options.messages The validation messages.
+ *  @param rule 校验规则
+ *  @param value 该字段在source对象中的值
+ *  @param callback 回调函数
+ *  @param source 要校验的source对象
+ *  @param options 校验选项
+ *  @param options.messages 校验message
  */
 function regexp(rule, value, callback, source, options) {
   const errors = [];
@@ -21,6 +21,7 @@ function regexp(rule, value, callback, source, options) {
     }
     rules.required(rule, value, source, errors, options);
     if (!isEmptyValue(value)) {
+      // 校验类型规则
       rules.type(rule, value, source, errors, options);
     }
   }

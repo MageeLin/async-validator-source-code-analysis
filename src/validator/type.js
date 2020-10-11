@@ -1,6 +1,16 @@
 import rules from '../rule/index.js';
 import { isEmptyValue } from '../util';
 
+/**
+ * 校验类型
+ *
+ *  @param rule 校验规则
+ *  @param value 该字段在source对象中的值
+ *  @param callback 回调函数
+ *  @param source 要校验的source对象
+ *  @param options 校验选项
+ *  @param options.messages 校验message
+ */
 function type(rule, value, callback, source, options) {
   const ruleType = rule.type;
   const errors = [];
@@ -12,6 +22,7 @@ function type(rule, value, callback, source, options) {
     }
     rules.required(rule, value, source, errors, options, ruleType);
     if (!isEmptyValue(value, ruleType)) {
+      // 校验type规则 rule.type
       rules.type(rule, value, source, errors, options);
     }
   }
