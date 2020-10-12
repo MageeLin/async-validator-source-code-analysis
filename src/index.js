@@ -10,22 +10,29 @@ import validators from './validator/index';
 import { messages as defaultMessages, newMessages } from './messages';
 
 /**
- *  Encapsulates a validation schema.
+ *  封装校验的schema
  *
- *  @param descriptor An object declaring validation rules
- *  for this schema.
+ *  @param descriptor 一个对此schema声明了校验规则的对象
  */
+// Schema构造函数
 function Schema(descriptor) {
+  // 实例的属性rules默认为空
   this.rules = null;
+  // 实例的私有属性_messages默认为messages.js文件里的内容
   this._messages = defaultMessages;
+  // 正式开始构建实例！
   this.define(descriptor);
 }
 
+// Schema的原型方法
 Schema.prototype = {
   messages(messages) {
+    // 如果新的messages参数存在
     if (messages) {
+      // 将 默认messages 和 参数 合并
       this._messages = deepMerge(newMessages(), messages);
     }
+    // 最后把合并后的messages返回
     return this._messages;
   },
   define(rules) {
@@ -99,10 +106,10 @@ Schema.prototype = {
     let value;
     const series = {};
     const keys = options.keys || Object.keys(this.rules);
-    keys.forEach(z => {
+    keys.forEach((z) => {
       arr = this.rules[z];
       value = source[z];
-      arr.forEach(r => {
+      arr.forEach((r) => {
         let rule = r;
         if (typeof rule.transform === 'function') {
           if (source === source_) {
@@ -217,16 +224,20 @@ Schema.prototype = {
               data.rule.options.messages = options.messages;
               data.rule.options.error = options.error;
             }
-            schema.validate(data.value, data.rule.options || options, errs => {
-              const finalErrors = [];
-              if (errors && errors.length) {
-                finalErrors.push(...errors);
-              }
-              if (errs && errs.length) {
-                finalErrors.push(...errs);
-              }
-              doIt(finalErrors.length ? finalErrors : null);
-            });
+            schema.validate(
+              data.value,
+              data.rule.options || options,
+              (errs) => {
+                const finalErrors = [];
+                if (errors && errors.length) {
+                  finalErrors.push(...errors);
+                }
+                if (errs && errs.length) {
+                  finalErrors.push(...errs);
+                }
+                doIt(finalErrors.length ? finalErrors : null);
+              },
+            );
           }
         }
 
@@ -248,11 +259,11 @@ Schema.prototype = {
         if (res && res.then) {
           res.then(
             () => cb(),
-            e => cb(e),
+            (e) => cb(e),
           );
         }
       },
-      results => {
+      (results) => {
         complete(results);
       },
     );
@@ -263,7 +274,8 @@ Schema.prototype = {
     }
     if (
       typeof rule.validator !== 'function' &&
-      rule.type && !validators.hasOwnProperty(rule.type)
+      rule.type &&
+      !validators.hasOwnProperty(rule.type)
     ) {
       throw new Error(format('Unknown rule type %s', rule.type));
     }
@@ -285,7 +297,12 @@ Schema.prototype = {
   },
 };
 
+// Schema的静态属性，存储了从validator目录中引进来的众多类型的校验器
+Schema.validators = validators;
+
+// Schema的静态方法，添加一个新类型的校验器
 Schema.register = function register(type, validator) {
+  // 校验器必需是个函数，不是就报错
   if (typeof validator !== 'function') {
     throw new Error(
       'Cannot register a validator by type, validator is not a function',
@@ -294,11 +311,10 @@ Schema.register = function register(type, validator) {
   validators[type] = validator;
 };
 
+// Schema的静态方法，在开发环境中可以console.warn
 Schema.warning = warning;
 
+// Schema的静态属性，存储了各种类型的默认message
 Schema.messages = defaultMessages;
-
-Schema.validators = validators;
-
 
 export default Schema;

@@ -17,7 +17,7 @@ if (
     // 检查是否能用console
     if (typeof console !== 'undefined' && console.warn) {
       // 检查errors中每一个error是否都是string类型
-      if (errors.every(e => typeof e === 'string')) {
+      if (errors.every((e) => typeof e === 'string')) {
         console.warn(type, errors); // 打印warning
       }
     }
@@ -29,7 +29,7 @@ export function convertFieldsError(errors) {
   if (!errors || !errors.length) return null; // 参数检查，errors应为数组
   const fields = {};
   // 这个迭代是将errors数组的所有“相同field”的error合并
-  errors.forEach(error => {
+  errors.forEach((error) => {
     const field = error.field; // 拿到每个error的key
     fields[field] = fields[field] || [];
     fields[field].push(error); // 把所有field相同的error一起放到fields[field]这个数组中
@@ -49,7 +49,7 @@ export function format(...args) {
   // 当第一个参数是string时
   if (typeof f === 'string') {
     // 根据字符串标志来区分处理方式
-    let str = String(f).replace(formatRegExp, x => {
+    let str = String(f).replace(formatRegExp, (x) => {
       if (x === '%%') {
         return '%'; // 如果是%%，就返回%
       }
@@ -125,7 +125,7 @@ function asyncParallelArray(arr, func, callback) {
     }
   }
 
-  arr.forEach(a => {
+  arr.forEach((a) => {
     func(a, count);
   });
 }
@@ -159,7 +159,7 @@ function asyncSerialArray(arr, func, callback) {
 /* 扁平化对象为数组 */
 function flattenObjArr(objArr) {
   const ret = [];
-  Object.keys(objArr).forEach(k => {
+  Object.keys(objArr).forEach((k) => {
     ret.push.apply(ret, objArr[k]); // 把每一个值push到ret中
   });
   return ret; //返回ret
@@ -181,12 +181,12 @@ export function asyncMap(objArr, option, func, callback) {
     const pending = new Promise((resolve, reject) => {
       // 定义一个函数next，这个函数先调用callback，参数市errors
       // 再根据errors的长度决定resolve还是reject
-      const next = errors => {
+      const next = (errors) => {
         callback(errors);
         return errors.length
-        // reject的时候，返回一个AsyncValidationError的实例
-        // 实例化时第一个参数是errors数组，第二个参数是对象类型的errors
-          ? reject(new AsyncValidationError(errors, convertFieldsError(errors)))
+          ? // reject的时候，返回一个AsyncValidationError的实例
+            // 实例化时第一个参数是errors数组，第二个参数是对象类型的errors
+            reject(new AsyncValidationError(errors, convertFieldsError(errors)))
           : resolve();
       };
       // 把对象扁平化为数组flattenArr
@@ -195,7 +195,7 @@ export function asyncMap(objArr, option, func, callback) {
       asyncSerialArray(flattenArr, func, next);
     });
     // 捕获error
-    pending.catch(e => e);
+    pending.catch((e) => e);
     // 返回promise实例
     return pending;
   }
@@ -211,7 +211,7 @@ export function asyncMap(objArr, option, func, callback) {
   const results = [];
   // 这里定义的函数next和上面的类似，只不过多了total的判断
   const pending = new Promise((resolve, reject) => {
-    const next = errors => {
+    const next = (errors) => {
       results.push.apply(results, errors);
       total++;
       if (total === objArrLength) {
@@ -229,7 +229,7 @@ export function asyncMap(objArr, option, func, callback) {
     }
     // 当firstFields中有对应的key时，就串行。
     // 否则就并行
-    objArrKeys.forEach(key => {
+    objArrKeys.forEach((key) => {
       const arr = objArr[key];
       if (firstFields.indexOf(key) !== -1) {
         asyncSerialArray(arr, func, next);
@@ -239,7 +239,7 @@ export function asyncMap(objArr, option, func, callback) {
     });
   });
   // 捕获error
-  pending.catch(e => e);
+  pending.catch((e) => e);
   // 返回promise实例
   return pending;
 }
@@ -247,7 +247,7 @@ export function asyncMap(objArr, option, func, callback) {
 /* Error的补充，入参为rule，返回一个函数  */
 export function complementError(rule) {
   // 返回一个函数
-  return oe => {
+  return (oe) => {
     // 当oe.message属性直接存在时，
     if (oe && oe.message) {
       oe.field = oe.field || rule.fullField; // 用rule.fullField补充field
@@ -263,26 +263,26 @@ export function complementError(rule) {
 
 /* 深合并 */
 export function deepMerge(target, source) {
-  // 第二个参数存在时
+  // 当新messages存在时
   if (source) {
-    // 迭代
+    // 迭代新messages
     for (const s in source) {
       // 确保s为自身属性key
       if (source.hasOwnProperty(s)) {
         const value = source[s];
-        // 当该属性value为对象时
+        // 当在原messages和新messages中这个键都为object类型时
         if (typeof value === 'object' && typeof target[s] === 'object') {
-          // 使用扩展运算符把value的内容都拿过来
+          // 使用扩展运算符把两个messages合并，新messages优先级高
           target[s] = {
             ...target[s],
             ...value,
           };
         } else {
-          // 不是对象就把value直接赋值
+          // 只要两个messages有一个不是对象，就把新messages的该属性直接赋值给老messages
           target[s] = value;
         }
       }
     }
   }
-  return target; // 返回合并后的target
+  return target; // 返回合并后的messages
 }
