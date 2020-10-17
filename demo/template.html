@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>async-validator-demo</title>
+    <script src="./async-validator.js"></script>
+    <style>
+      .warning {
+        font-size: 70%;
+        color: crimson;
+      }
+    </style>
+  </head>
+
+  <body>
+    <form name="demo" id="demo">
+      <div>
+        <label for="name">姓名：</label>
+        <input type="text" name="name" />
+      </div>
+      <fieldset name="information">
+        <legend>信息</legend>
+        <div>
+          <label for="age">年龄：</label>
+          <input type="number" name="age" />
+        </div>
+        <div>
+          <label for="sex">性别：</label>
+          <select name="sex">
+            <option value="">空</option>
+            <option value="male">男</option>
+            <option value="female">女</option>
+            <option value="else">其他</option>
+          </select>
+        </div>
+      </fieldset>
+      <fieldset name="favorite">
+        <legend>喜好</legend>
+        <div>
+          <label for="ballSport">球类运动：</label>
+          <input name="ballSport" />
+        </div>
+        <div>
+          <label for="comedyFilm">喜剧电影：</label>
+          <select name="comedyFilm">
+            <option value="">空</option>
+            <option value="让子弹飞">让子弹飞</option>
+            <option value="一步之遥">一步之遥</option>
+            <option value="邪不压正">邪不压正</option>
+          </select>
+        </div>
+        <fieldset name="food">
+          <legend>食物</legend>
+          <div>
+            <label for="vegetable">蔬菜：</label>
+            <input name="vegetable" />
+          </div>
+          <div>
+            <label for="fruit">水果：</label>
+            <input name="fruit" />
+          </div>
+        </fieldset>
+      </fieldset>
+
+      <div class="form-example">
+        <button type="button" onclick="validate()">提交</button>
+      </div>
+    </form>
+    <script>
+      let validateRules = {
+        name: [
+          {
+            required: true,
+            message: '姓名为必填项',
+          },
+          {
+            type: 'string',
+            min: 2,
+            message: '姓名长度必须大于两个字符',
+          },
+        ],
+        information: {
+          type: 'object',
+          message: '个人信息未填写',
+          required: true,
+          fields: {
+            age: [
+              {
+                required: true,
+                message: '年龄为必选项',
+              },
+              {
+                type: 'number',
+                max: 18,
+                min: 0,
+                message: '年龄超出范围',
+                transform(value) {
+                  return +value;
+                },
+              },
+            ],
+            sex: [
+              {
+                required: true,
+                message: '性别为必填项',
+              },
+              {
+                validator: function (rule, value, callback) {
+                  if (value !== 'male' && value !== 'female') {
+                    callback('性别必须为男或女');
+                  }
+                  callback();
+
+                  // setTimeout(() => {
+                  //   if (value !== 'male' && value !== 'female') {
+                  //     callback('性别必须为男或女，异步');
+                  //   }
+                  //   callback();
+                  // }, 3000);
+                },
+              },
+            ],
+          },
+        },
+        favorite: {
+          type: 'object',
+          message: '喜好未填写',
+          required: true,
+          fields: {
+            ballSport: [
+              {
+                required: true,
+                message: '喜好的球类运动必填',
+              },
+              {
+                type: 'string',
+                pattern: /^.*球$/,
+                message: '必须以球结尾',
+              },
+            ],
+            comedyFilm: {
+              type: 'enum',
+              enum: ['让子弹飞', '一步之遥', '邪不压正'],
+              message: '喜欢的喜剧电影得是民国三部曲',
+            },
+            food: {
+              type: 'object',
+              message: '喜好的食物未填写',
+              required: true,
+              fields: {
+                vegetable: [
+                  {
+                    required: true,
+                    message: '喜好的食物-蔬菜必填',
+                  },
+                  {
+                    // promise模式
+                    asyncValidator: function (rule, value) {
+                      return new Promise((resolve, reject) => {
+                        setTimeout(() => {
+                          if (value === '') {
+                            reject(
+                              '喜好的食物-蔬菜不能为空字符串 asyncValidator  return promise',
+                            );
+                          }
+                          resolve();
+                        }, 500);
+                      });
+                    },
+                  },
+                ],
+                fruit: [
+                  {
+                    required: true,
+                    message: '喜好的食物-水果必填',
+                  },
+                  {
+                    // 异步模式
+                    asyncValidator: function (rule, value, callback) {
+                      setTimeout(() => {
+                        if (value === '') {
+                          callback(
+                            '喜好的食物-水果不能为空字符串 asyncValidator callback async',
+                          );
+                        }
+                        callback();
+                      }, 1000);
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        },
+      };
+      let schema = new Schema(validateRules);
+
+      function validate() {
+        const form = document.getElementById('demo');
+        let formData = new FormData(form);
+        let formDataObj = {};
+        for ([key, value] of formData) {
+          formDataObj[key] = value;
+        }
+        let obj = {
+          name: formDataObj['name'],
+          information: {
+            age: formDataObj['age'],
+            sex: formDataObj['sex'],
+          },
+          favorite: {
+            ballSport: formDataObj['ballSport'],
+            comedyFilm: formDataObj['comedyFilm'],
+            food: {
+              vegetable: formDataObj['vegetable'],
+              fruit: formDataObj['fruit'],
+            },
+          },
+        };
+        console.log('LJY-dev: -----------------------------');
+        console.log('LJY-dev: validate -> obj', obj);
+        console.log('LJY-dev: -----------------------------');
+
+        schema
+          .validate(obj, {
+            // firstFields: true,
+            // first: true,
+          })
+          .then((value) => {
+            // 校验通过
+            console.log('校验通过', value);
+          })
+          .catch(({ errors, fields }) => {
+            // 校验未通过
+            // 显示错误信息
+            console.log('校验失败', errors, fields);
+            warnInsertToDOM(fields);
+          });
+      }
+
+      /**
+       * @description: 根据报错信息添加tips
+       * @param {type}
+       * @return {type}
+       */
+      function warnInsertToDOM(fields) {
+        // 清除之前的节点
+        let oldElements = document.getElementsByClassName('warning');
+        while (oldElements[0]) {
+          oldElements[0].parentNode.removeChild(oldElements[0]);
+        }
+        // 添加新节点
+        Object.keys(fields).forEach((name) => {
+          // debugger
+          // 创造新节点
+          const message = fields[name].map((error) => error.message).join('\n');
+          const node = document.createElement('p');
+          node.className = 'warning';
+          node.innerText = message;
+          // 找到插入的位置
+          const lastDotIndex = name.lastIndexOf('.');
+          if (lastDotIndex > -1) {
+            name = name.substring(lastDotIndex + 1);
+          }
+          let referenceElement = document.getElementsByName(name)[0];
+          // 插入新节点
+          function insertAfter(newElement, targetElement) {
+            var parent = targetElement.parentNode;
+            if (parent.lastChild == targetElement) {
+              parent.appendChild(newElement);
+            } else {
+              parent.insertBefore(newElement, targetElement.nextSibling);
+            }
+          }
+          insertAfter(node, referenceElement);
+        });
+      }
+    </script>
+  </body>
+</html>

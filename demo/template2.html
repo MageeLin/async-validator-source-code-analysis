@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>async-validator-demo</title>
+  </head>
+
+  <body>
+    <script>
+      (function () {
+        let flag = 3;
+        let arr = [];
+        function check(fakeValidate, fakeReject, fakeResolve) {
+          if (flag > 0) {
+            arr.push('⚽');
+            flag--;
+          } else {
+            if (!arr.length) {
+              fakeReject();
+            } else {
+              fakeReject(arr);
+            }
+          }
+        }
+        let firstReject = null;
+        function validate() {
+          let p = new Promise((resolve, reject) => {
+            setTimeout(() => {
+              if (!firstReject) {
+                firstReject = reject;
+              }
+              if (flag > 0) {
+                arr.push('⚽');
+                flag--;
+                validate();
+              }
+
+              if (!arr.length) {
+                resolve();
+              } else {
+                if (!firstReject) {
+                
+              }
+                reject(arr);
+              }
+            }, 1000);
+          });
+          p.catch((err) => {
+            console.log(1, err);
+            return err;
+          });
+          return p;
+        }
+        validate()
+          .then()
+          .catch((err) => {
+            console.log(2, err);
+          });
+      })();
+
+      //   let flag = 3;
+      //   let arr = [];
+      //   function check(validate ,fakeResolve) {
+      //     if( flag > 0){
+      //       arr.push('⚽');
+      //       flag--;
+      //     }else{
+      //       fakeResolve(arr)
+      //     }
+      //   }
+      //   function validate() {
+      //     let p = new Promise((resolve, reject) => {
+      //       if (flag > 0) {
+      //         setTimeout(() => {
+      //           arr.push('⚽');
+      //           flag--;
+      //           validate();
+      //           if (!arr.length) {
+      //             resolve();
+      //           } else {
+      //             reject(arr);
+      //           }
+      //         }, 1000);
+      //       }
+      //     });
+      //     p.catch((err) => {
+      //       console.log(1, err);
+      //       return err;
+      //     });
+      //     return p;
+      //   }
+      //   validate()
+      //     .then()
+      //     .catch((err) => {
+      //       console.log(2, err);
+      //     });
+      // })();
+
+      // function Schema() {
+      //   this.flag = 3;
+      //   this.arr = [];
+      // }
+      // Schema.prototype.validate = function () {
+      //   let flag = this.flag;
+      //   let arr = this.arr;
+      //   let p = new Promise((resolve, reject) => {
+      //     if (flag > 0) {
+      //       setTimeout(() => {
+      //         arr.push('⚽');
+      //         flag--;
+      //         validate();
+      //         if (!arr.length) {
+      //           resolve();
+      //         } else {
+      //           reject(arr);
+      //         }
+      //       }, 1000);
+      //     }
+      //   });
+      //   p.catch((err) => {
+      //     console.log(1, err);
+      //     return err;
+      //   });
+      //   return p;
+      // };
+    </script>
+  </body>
+</html>

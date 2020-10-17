@@ -24,7 +24,17 @@ if (
   };
 }
 
-/* 转换字段错误，输入errors数组，输出对象*/
+/* 转换errors数组的格式，输入errors数组，输出将所有“相同field”的error合并的对象*/
+// 输入的格式
+// [
+//   { "message": "姓名为必填项", "field": "name" },
+//   { "message": "年龄超出范围", "field": "information.age" }
+// ]
+// 返回的格式
+// {
+//   "name": [{ "message": "姓名为必填项", "field": "name" }],
+//   "information.age": [{ "message": "年龄超出范围", "field": "information.age" }]
+// }
 export function convertFieldsError(errors) {
   if (!errors || !errors.length) return null; // 参数检查，errors应为数组
   const fields = {};
@@ -112,25 +122,149 @@ export function isEmptyObject(obj) {
 }
 
 /* 内部方法，异步平行数组，并行化 */
+// arr的格式：
+// [
+//   {
+//     "rule": {
+//       "required": true,
+//       "message": "姓名为必填项",
+//       "field": "name",
+//       "fullField": "name",
+//       "type": "string"
+//     },
+//     "value": "",
+//     "source": { "information": { "age": 20 }, "name": "" },
+//     "field": "name"
+//   },
+//   {
+//     "rule": {
+//       "type": "object",
+//       "required": false,
+//       "fields": {
+//         "age": {
+//           "required": true,
+//           "type": "number",
+//           "max": 10,
+//           "min": 1,
+//           "message": "年龄超出范围"
+//         }
+//       },
+//       "field": "information",
+//       "fullField": "information"
+//     },
+//     "value": { "age": 20 },
+//     "source": { "information": { "age": 20 }, "name": "" },
+//     "field": "information"
+//   }
+// ]
+
+// func的格式：
+// (data, doIt) => {
+//   const rule = data.rule;
+//   let deep =
+//     (rule.type === 'object' || rule.type === 'array') &&
+//     (typeof rule.fields === 'object' ||
+//       typeof rule.defaultField === 'object');
+//   deep = deep && (rule.required || (!rule.required && data.value));
+//   rule.field = data.field;
+
+//   function addFullfield(key, schema) {}
+
+//   function cb(e = []) {}
+
+//   let res;
+//   if (rule.asyncValidator) {} else if (rule.validator) {}
+//   if (res && res.then) {}
+// },
+
+// callback的格式：
+// function next(errors) {
+//   callback(errors);
+//   return errors.length ? reject(new AsyncValidationError(errors, convertFieldsError(errors))) : resolve();
+// };
 function asyncParallelArray(arr, func, callback) {
   const results = [];
   let total = 0;
   const arrLength = arr.length;
 
+  // 不断的给结果数组添加error
   function count(errors) {
     results.push.apply(results, errors);
+    // errors条数和数组大小一致时结束
     total++;
     if (total === arrLength) {
       callback(results);
     }
   }
 
+  // 给arr中每一条都调用func方法，形成了并行处理
   arr.forEach((a) => {
-    func(a, count);
+    func(a, count); // 执行func(element, count)，
   });
 }
 
 /* 内部方法，异步串行数组，串行化 */
+
+// arr的格式：
+// [
+//   {
+//     "rule": {
+//       "required": true,
+//       "message": "姓名为必填项",
+//       "field": "name",
+//       "fullField": "name",
+//       "type": "string"
+//     },
+//     "value": "",
+//     "source": { "information": { "age": 20 }, "name": "" },
+//     "field": "name"
+//   },
+//   {
+//     "rule": {
+//       "type": "object",
+//       "required": false,
+//       "fields": {
+//         "age": {
+//           "required": true,
+//           "type": "number",
+//           "max": 10,
+//           "min": 1,
+//           "message": "年龄超出范围"
+//         }
+//       },
+//       "field": "information",
+//       "fullField": "information"
+//     },
+//     "value": { "age": 20 },
+//     "source": { "information": { "age": 20 }, "name": "" },
+//     "field": "information"
+//   }
+// ]
+
+// func的格式：
+// (data, doIt) => {
+//   const rule = data.rule;
+//   let deep =
+//     (rule.type === 'object' || rule.type === 'array') &&
+//     (typeof rule.fields === 'object' ||
+//       typeof rule.defaultField === 'object');
+//   deep = deep && (rule.required || (!rule.required && data.value));
+//   rule.field = data.field;
+
+//   function addFullfield(key, schema) {}
+
+//   function cb(e = []) {}
+
+//   let res;
+//   if (rule.asyncValidator) {} else if (rule.validator) {}
+//   if (res && res.then) {}
+// },
+
+// callback的格式：
+// function next(errors) {
+//   callback(errors);
+//   return errors.length ? reject(new AsyncValidationError(errors, convertFieldsError(errors))) : resolve();
+// };
 function asyncSerialArray(arr, func, callback) {
   let index = 0;
   const arrLength = arr.length;
@@ -147,16 +281,93 @@ function asyncSerialArray(arr, func, callback) {
     index = index + 1; // 闭包index + 1
     // 当前的index比length小时
     if (original < arrLength) {
-      func(arr[original], next); // 执行func(element, next)
+      func(arr[original], next); // 执行func(element, next)，形成了递归
     } else {
       callback([]); // 否则调用callback([]);
     }
   }
 
+  // 这里面的几个方法都是用callback来进行的最后返回
   next([]);
 }
 
 /* 扁平化对象为数组 */
+// 输入格式：
+// {
+//   "name": [
+//     {
+//       "rule": {
+//         "required": true,
+//         "message": "姓名为必填项",
+//         "field": "name",
+//         "fullField": "name",
+//         "type": "string"
+//       },
+//       "value": "",
+//       "source": { "information": { "age": 20 }, "name": "" },
+//       "field": "name"
+//     }
+//   ],
+//   "information": [
+//     {
+//       "rule": {
+//         "type": "object",
+//         "required": false,
+//         "fields": {
+//           "age": {
+//             "required": true,
+//             "type": "number",
+//             "max": 10,
+//             "min": 1,
+//             "message": "年龄超出范围"
+//           }
+//         },
+//         "field": "information",
+//         "fullField": "information"
+//       },
+//       "value": { "age": 20 },
+//       "source": { "information": { "age": 20 }, "name": "" },
+//       "field": "information"
+//     }
+//   ]
+// }
+
+// 输出格式：
+// [
+//   {
+//     "rule": {
+//       "required": true,
+//       "message": "姓名为必填项",
+//       "field": "name",
+//       "fullField": "name",
+//       "type": "string"
+//     },
+//     "value": "",
+//     "source": { "information": { "age": 20 }, "name": "" },
+//     "field": "name"
+//   },
+//   {
+//     "rule": {
+//       "type": "object",
+//       "required": false,
+//       "fields": {
+//         "age": {
+//           "required": true,
+//           "type": "number",
+//           "max": 10,
+//           "min": 1,
+//           "message": "年龄超出范围"
+//         }
+//       },
+//       "field": "information",
+//       "fullField": "information"
+//     },
+//     "value": { "age": 20 },
+//     "source": { "information": { "age": 20 }, "name": "" },
+//     "field": "information"
+//   }
+// ]
+
 function flattenObjArr(objArr) {
   const ret = [];
   Object.keys(objArr).forEach((k) => {
@@ -173,13 +384,51 @@ export class AsyncValidationError extends Error {
     this.fields = fields;
   }
 }
-
+// 下面asyncMap方法的objArr的例子
+// {
+//   "name": [
+//     {
+//       "rule": {
+//         "required": false,
+//         "message": "姓名为必填项",
+//         "field": "name",
+//         "fullField": "name",
+//         "type": "string"
+//       },
+//       "value": "",
+//       "source": { "information": { "age": 20 }, "name": "" },
+//       "field": "name"
+//     }
+//   ],
+//   "infomation": [
+//     {
+//       "rule": {
+//         "type": "object",
+//         "required": false,
+//         "fields": {
+//           "age": {
+//             "required": true,
+//             "type": "number",
+//             "max": 10,
+//             "min": 1,
+//             "message": "年龄超出范围"
+//           }
+//         },
+//         "field": "infomation",
+//         "fullField": "infomation"
+//       },
+//       "source": { "information": { "age": 20 }, "name": "" },
+//       "field": "infomation"
+//     }
+//   ]
+// }
 export function asyncMap(objArr, option, func, callback) {
+  
   // 如果option.first选项为真，说明第一个error产生时就要报错
   if (option.first) {
     // pending是一个promise
     const pending = new Promise((resolve, reject) => {
-      // 定义一个函数next，这个函数先调用callback，参数市errors
+      // 定义一个函数next，这个函数先调用callback，参数是errors
       // 再根据errors的长度决定resolve还是reject
       const next = (errors) => {
         callback(errors);
@@ -199,6 +448,8 @@ export function asyncMap(objArr, option, func, callback) {
     // 返回promise实例
     return pending;
   }
+
+  // 如果option.first选项为假，说明所有的error都产生时才报错
   // 当指定字段的第一个校验规则产生error时调用callback，不再继续处理相同字段的校验规则。
   let firstFields = option.firstFields || [];
   // true意味着所有字段生效。
@@ -215,6 +466,7 @@ export function asyncMap(objArr, option, func, callback) {
       results.push.apply(results, errors);
       total++;
       if (total === objArrLength) {
+        // 这个callback和reject/resolve是这个库既能回调函数又能promise的核心
         callback(results);
         return results.length
           ? reject(
@@ -227,8 +479,9 @@ export function asyncMap(objArr, option, func, callback) {
       callback(results);
       resolve();
     }
-    // 当firstFields中有对应的key时，就串行。
-    // 否则就并行
+    // 当firstFields中指定了该key时，说明该字段的第一个校验失败产生时就停止并调用callback
+    // 所以是串行的asyncSerialArray
+    // 没有指定该key，说明该字段的校验error需要都产生，就并行asyncParallelArray
     objArrKeys.forEach((key) => {
       const arr = objArr[key];
       if (firstFields.indexOf(key) !== -1) {
@@ -238,15 +491,15 @@ export function asyncMap(objArr, option, func, callback) {
       }
     });
   });
-  // 捕获error
+  // 捕获error，添加错误处理
   pending.catch((e) => e);
   // 返回promise实例
   return pending;
 }
 
-/* Error的补充，入参为rule，返回一个函数  */
+/* Error的补充，入参为rule，返回map的回调函数  */
 export function complementError(rule) {
-  // 返回一个函数
+  // 返回一个函数，这个函数就是map方法的回调函数，参数是每个error
   return (oe) => {
     // 当oe.message属性直接存在时，
     if (oe && oe.message) {

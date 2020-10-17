@@ -1,0 +1,50 @@
+{
+  "vegetable": [
+    {
+      "rule": {
+        "required": true,
+        "message": "喜好的食物-蔬菜必填",
+        "fullField": "favorite.food.vegetable",
+        "field": "vegetable",
+        "type": "string"
+      },
+      "value": "",
+      "source": { "vegetable": "", "fruit": "" },
+      "field": "vegetable"
+    },
+    {
+      "rule": {
+        "fullField": "favorite.food.vegetable",
+        "field": "vegetable",
+        "type": "string"
+      },
+      "value": "",
+      "source": { "vegetable": "", "fruit": "" },
+      "field": "vegetable"
+    }
+  ],
+  "fruit": [
+    {
+      "rule": {
+        "required": true,
+        "message": "喜好的食物-水果必填",
+        "fullField": "favorite.food.fruit",
+        "field": "fruit",
+        "type": "string"
+      },
+      "value": "",
+      "source": { "vegetable": "", "fruit": "" },
+      "field": "fruit"
+    },
+    {
+      "rule": {
+        "fullField": "favorite.food.fruit",
+        "field": "fruit",
+        "type": "string"
+      },
+      "value": "",
+      "source": { "vegetable": "", "fruit": "" },
+      "field": "fruit"
+    }
+  ]
+}
