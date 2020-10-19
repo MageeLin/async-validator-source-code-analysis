@@ -68,7 +68,6 @@ Schema.prototype = {
     let callback = oc;
     // 参数变换，因为options是可选的，所以第二个参数为函数时
     // 说明第二个参数是callback，options自然就是空对象
-    // 作者比较严谨
     if (typeof options === 'function') {
       callback = options;
       options = {};
@@ -83,8 +82,10 @@ Schema.prototype = {
       return Promise.resolve();
     }
 
-    // 内部定义了个complete函数，目的是如何callback最后生成的errors对象
-    // 参数results是一个error组成的数组（未扁平化的）
+    // 内部定义了个complete 函数，目的是如何callback最后生成的 errors 和 fields
+    // 入参results = [{ message, field }]
+    // 返回的结果是errors = [{ field, message }]和参数fields = { fullFieldName: [{field, message}] }
+    // 然后把 errors 和 fields 传给 callback 调用
     function complete(results) {
       // 初始化
       let i;
@@ -134,12 +135,13 @@ Schema.prototype = {
       // options没有messages属性就给个默认值
       options.messages = this.messages();
     }
-    // 初始化
+    // 校验规则转换。将参数 rules 复合为 series 对象
+    // series = { key: [{ rule, value, source, field }] }
     let arr;
     let value;
     const series = {};
     // keys是rules的所有键
-    // 要注意此处的rules其实是单层的rule，每一个深度都要执行一次
+    // 要注意此处的rules其实是单层的rule，所以每一个深度都要执行一次
     const keys = options.keys || Object.keys(this.rules);
     keys.forEach((z) => {
       // arr是rule[z]的，是一个数组
@@ -178,7 +180,7 @@ Schema.prototype = {
         if (!rule.validator) {
           return;
         }
-        // 给series push这个完整的单条rule
+        // 最后生成了完整了series = { key: [{ rule, value, source, field }] }
         series[z] = series[z] || [];
         series[z].push({
           rule,
@@ -188,67 +190,36 @@ Schema.prototype = {
         });
       });
     });
-    // 上述步骤完成时，输出的series是什么，如下：
-    // {
-    //   "name": [
-    //     {
-    //       "rule": {
-    //         "required": false,
-    //         "message": "姓名为必填项",
-    //         "field": "name",
-    //         "fullField": "name",
-    //         "type": "string"
-    //       },
-    //       "value": "",
-    //       "source": { "information": { "age": 20 }, "name": "" },
-    //       "field": "name"
-    //     }
-    //   ],
-    //   "infomation": [
-    //     {
-    //       "rule": {
-    //         "type": "object",
-    //         "required": false,
-    //         "fields": {
-    //           "age": {
-    //             "required": true,
-    //             "type": "number",
-    //             "max": 10,
-    //             "min": 1,
-    //             "message": "年龄超出范围"
-    //           }
-    //         },
-    //         "field": "infomation",
-    //         "fullField": "infomation"
-    //       },
-    //       "source": { "information": { "age": 20 }, "name": "" },
-    //       "field": "infomation"
-    //     }
-    //   ]
-    // }
     
     const errorFields = {};
-    // 到了这一步就是返回util.asyncMap的结果，用到了前一步形成的
-    // series options和complete函数
+    // 到了这一步就是返回util.asyncMap的结果
+    // 四个参数：
+    // series = { key: [{ rule, value, source, field }] }
+    // options = rule.option
+    // singleValidator 用于接收单个校验器，并操控下一个校验器的执行
+    // completeCallback 最终回调函数，用于执行内部回调complete函数
     return asyncMap(
       series,
       options,
       // 下面这个就是func函数，不管是并行还是串行，都要用这个func来校验和添加error
-      // 第一个参数是完全体的rule对象
-      // 第二个参数是next函数
+      // 第一个参数data = { rule, value, source, field }，也就是series中的每一个元素
+      // 第二个参数 doIt 是 next 函数，doIt 函数用于执行下一个校验器或者最终回调，如下：
+      // if(options.first) {
+      //   执行 asyncSerialArray 函数处理参数错误对象数组，将直接调用completeCallback回调，中断后续校验器的执行
+      // } else {
+      //   执行 asyncParallelArray 函数将所有校验器的错误对象数组构建成单一数组，供completeCallback回调处理
+      // }
       (data, doIt) => {
         const rule = data.rule;
-        // 检查rule是不是多层的
+        // 通过rule.type、rule.fields、rule.defaultField判断是否深度校验。若是，内部变量deep置为真。
         let deep =
           (rule.type === 'object' || rule.type === 'array') &&
           (typeof rule.fields === 'object' ||
             typeof rule.defaultField === 'object');
-        // 检查这个值是不是必需或者这个值是不是不为空
         deep = deep && (rule.required || (!rule.required && data.value));
-        // 把data.field赋给rule
         rule.field = data.field;
 
-        // 这个函数是给每条完整的schema添加完整字段名
+        // 定义addFullfield函数，用于获取深度校验时嵌套对象属性的fullField。
         function addFullfield(key, schema) {
           return {
             ...schema,
@@ -256,7 +227,8 @@ Schema.prototype = {
           };
         }
 
-        // 这个函数是？
+        // 定义单次校验后执行的回调函数cb。cb的实现机制中，
+        // 包含将错误对象加工为[{ field, message }]数据格式；
         function cb(e = []) {
           // 确保封装成数组
           let errors = e;
@@ -280,12 +252,6 @@ Schema.prototype = {
           // 当options设置了first属性后，并且有error时，就该doIt返回了
           if (options.first && errors.length) {
             errorFields[rule.field] = 1;
-            // doIt这里的逻辑太长了，第一步是找到闭包里的doIt，
-            // 第二步是找到asyncMap(objArr, option, func, callback)的func
-            // 第三步是找到asyncSerialArray(arr, func, callback)和asyncParallelArray(arr, func, callback)里的func
-            // 第四步是func(arr[original], next)和func(a, count);
-            // 第五步找到对应的next和count的定义，
-            // 第六步找到了对应的next，其实就是到了最后的回调函数返回错误和promise返回数组
             return doIt(errors);
           }
           // 当rule深度只有一层，也该直接doIt返回
@@ -325,15 +291,7 @@ Schema.prototype = {
               ...data.rule.fields,
             };
             // 合并完之后格式如下：
-            // {
-            //   "age": {
-            //     "max": 10,
-            //     "message": "年龄超出范围",
-            //     "min": 1,
-            //     "required": true,
-            //     "type": "number"
-            //   }
-            // }
+            // { name: rule{} }
 
             // 数组化并添加fullField
             for (const f in fieldsSchema) {
@@ -345,16 +303,7 @@ Schema.prototype = {
               }
             }
             // 完成之后格式如下
-            // [
-            //   {
-            //     "required": true,
-            //     "type": "number",
-            //     "max": 10,
-            //     "min": 1,
-            //     "message": "年龄超出范围",
-            //     "fullField": "information.age"
-            //   }
-            // ]
+            // [ rule{} ]
             
 
             // 在这里又new了一个新的Schema对象，用于验证更深一级的value
@@ -401,7 +350,9 @@ Schema.prototype = {
             cb(res.message);
           }
         }
+        // 若返回Promise实例，cb将在该Promise实例的then方法中执行。
         if (res && res.then) {
+          // 利用这个promise的then结构实现了异步的校验
           res.then(
             () => cb(),
             (e) => cb(e),

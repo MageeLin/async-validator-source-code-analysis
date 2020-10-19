@@ -121,44 +121,18 @@ export function isEmptyObject(obj) {
   return Object.keys(obj).length === 0; // Object.keys等于0就认为空
 }
 
-/* 内部方法，异步平行数组，并行化 */
-// arr的格式：
-// [
-//   {
-//     "rule": {
-//       "required": true,
-//       "message": "姓名为必填项",
-//       "field": "name",
-//       "fullField": "name",
-//       "type": "string"
-//     },
-//     "value": "",
-//     "source": { "information": { "age": 20 }, "name": "" },
-//     "field": "name"
-//   },
-//   {
-//     "rule": {
-//       "type": "object",
-//       "required": false,
-//       "fields": {
-//         "age": {
-//           "required": true,
-//           "type": "number",
-//           "max": 10,
-//           "min": 1,
-//           "message": "年龄超出范围"
-//         }
-//       },
-//       "field": "information",
-//       "fullField": "information"
-//     },
-//     "value": { "age": 20 },
-//     "source": { "information": { "age": 20 }, "name": "" },
-//     "field": "information"
-//   }
-// ]
+/* 内部方法，异步并行校验 */
+// 这里的关键就是asyncParallelArray -> doIt -> cb -> asyncParallelArray，循环调用实现的每一次校验
+// arr的格式：[{ rule, value, source, field }]
 
 // func的格式：
+// 第一个参数data = { rule, value, source, field }，也就是series中的每一个元素
+// 第二个参数 doIt 是 next 函数，doIt 函数用于执行下一个校验器或者最终回调，如下：
+// if(options.first) {
+//   执行 asyncSerialArray 函数处理参数错误对象数组，将直接调用completeCallback回调，中断后续校验器的执行
+// } else {
+//   执行 asyncParallelArray 函数将所有校验器的错误对象数组构建成单一数组，供completeCallback回调处理
+// }
 // (data, doIt) => {
 //   const rule = data.rule;
 //   let deep =
@@ -167,11 +141,8 @@ export function isEmptyObject(obj) {
 //       typeof rule.defaultField === 'object');
 //   deep = deep && (rule.required || (!rule.required && data.value));
 //   rule.field = data.field;
-
 //   function addFullfield(key, schema) {}
-
 //   function cb(e = []) {}
-
 //   let res;
 //   if (rule.asyncValidator) {} else if (rule.validator) {}
 //   if (res && res.then) {}
@@ -203,68 +174,9 @@ function asyncParallelArray(arr, func, callback) {
   });
 }
 
-/* 内部方法，异步串行数组，串行化 */
-
-// arr的格式：
-// [
-//   {
-//     "rule": {
-//       "required": true,
-//       "message": "姓名为必填项",
-//       "field": "name",
-//       "fullField": "name",
-//       "type": "string"
-//     },
-//     "value": "",
-//     "source": { "information": { "age": 20 }, "name": "" },
-//     "field": "name"
-//   },
-//   {
-//     "rule": {
-//       "type": "object",
-//       "required": false,
-//       "fields": {
-//         "age": {
-//           "required": true,
-//           "type": "number",
-//           "max": 10,
-//           "min": 1,
-//           "message": "年龄超出范围"
-//         }
-//       },
-//       "field": "information",
-//       "fullField": "information"
-//     },
-//     "value": { "age": 20 },
-//     "source": { "information": { "age": 20 }, "name": "" },
-//     "field": "information"
-//   }
-// ]
-
-// func的格式：
-// (data, doIt) => {
-//   const rule = data.rule;
-//   let deep =
-//     (rule.type === 'object' || rule.type === 'array') &&
-//     (typeof rule.fields === 'object' ||
-//       typeof rule.defaultField === 'object');
-//   deep = deep && (rule.required || (!rule.required && data.value));
-//   rule.field = data.field;
-
-//   function addFullfield(key, schema) {}
-
-//   function cb(e = []) {}
-
-//   let res;
-//   if (rule.asyncValidator) {} else if (rule.validator) {}
-//   if (res && res.then) {}
-// },
-
-// callback的格式：
-// function next(errors) {
-//   callback(errors);
-//   return errors.length ? reject(new AsyncValidationError(errors, convertFieldsError(errors))) : resolve();
-// };
+/* 内部方法，异步有序校验，串行化 */
+// 同样，这里的关键也是 asyncSerialArray -> doIt -> asyncSerialArray ，
+// 循环调用实现的每一次校验
 function asyncSerialArray(arr, func, callback) {
   let index = 0;
   const arrLength = arr.length;
@@ -385,45 +297,7 @@ export class AsyncValidationError extends Error {
   }
 }
 // 下面asyncMap方法的objArr的例子
-// {
-//   "name": [
-//     {
-//       "rule": {
-//         "required": false,
-//         "message": "姓名为必填项",
-//         "field": "name",
-//         "fullField": "name",
-//         "type": "string"
-//       },
-//       "value": "",
-//       "source": { "information": { "age": 20 }, "name": "" },
-//       "field": "name"
-//     }
-//   ],
-//   "infomation": [
-//     {
-//       "rule": {
-//         "type": "object",
-//         "required": false,
-//         "fields": {
-//           "age": {
-//             "required": true,
-//             "type": "number",
-//             "max": 10,
-//             "min": 1,
-//             "message": "年龄超出范围"
-//           }
-//         },
-//         "field": "infomation",
-//         "fullField": "infomation"
-//       },
-//       "source": { "information": { "age": 20 }, "name": "" },
-//       "field": "infomation"
-//     }
-//   ]
-// }
 export function asyncMap(objArr, option, func, callback) {
-  
   // 如果option.first选项为真，说明第一个error产生时就要报错
   if (option.first) {
     // pending是一个promise
@@ -464,6 +338,7 @@ export function asyncMap(objArr, option, func, callback) {
   const pending = new Promise((resolve, reject) => {
     const next = (errors) => {
       results.push.apply(results, errors);
+      // 只有全部的校验完才能执行最后的callback和reject
       total++;
       if (total === objArrLength) {
         // 这个callback和reject/resolve是这个库既能回调函数又能promise的核心
