@@ -112,7 +112,7 @@ function(source, [options], callback): Promise
 
 ### Rules
 
-Rules 可能是执行校验的函数。
+Rules 是执行校验的函数。
 
 ```js
 function(rule, value, callback, source, options)
